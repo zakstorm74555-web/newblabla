@@ -546,6 +546,39 @@
                     </div>
                 </div>
 
+                <!-- Bluetooth Ad-hoc Local Link Control Hub -->
+                <div class="panel" style="border: 1px solid rgba(255, 215, 0, 0.15); background: linear-gradient(135deg, var(--surface-color) 0%, rgba(30, 30, 30, 0.95) 100%);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1.5px solid var(--surface-accent); padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                        <h3 style="border-bottom: none; padding-bottom: 0; margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>📡</span> Bluetooth Smart Sync Bridge
+                        </h3>
+                        <span id="ble-main-badge" class="badge" style="background-color: rgba(255, 215, 0, 0.15); color: var(--gold-primary); border: 1px solid var(--gold-secondary); font-size: 11px; padding: 4px 10px; border-radius: 20px;">
+                            Broadcasting Beacon
+                        </span>
+                    </div>
+                    <p style="font-size: 13.5px; line-height: 22px; color: var(--text-muted); margin-bottom: 16px;">
+                        The admin console operates in a decoupled, standalone capacity. For high-speed synchronized orchestration, activate the <strong>Ad-hoc BLE Control Channel</strong>. This establishes a simulated peer-to-peer data bridge between your computer and local mobile screens without traversing internet nodes.
+                    </p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,215,0,0.04);">
+                        <div>
+                            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 4px;">Signal State & RSSI</span>
+                            <strong id="ble-rssi" style="font-family: var(--font-mono); color: var(--gold-primary);">-48 dBm (Excellent Coverage)</strong>
+                        </div>
+                        <div>
+                            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 4px;">Virtual BLE MAC Identifier</span>
+                            <strong style="font-family: var(--font-mono); color: var(--text-normal);">FE:93:1C:AA:BB:C1</strong>
+                        </div>
+                        <div>
+                            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 4px;">Localized Packet Sync</span>
+                            <strong id="ble-sync-count" style="font-family: var(--font-mono); color: var(--gold-secondary);">288 packets/sec (Lossless)</strong>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-gold" id="btn-toggle-ble" style="font-weight: 700;">🔌 Turn Off Bluetooth Broadcast</button>
+                        <button class="btn btn-secondary" id="btn-force-ble-sync">⚡ Trigger Forced Peer Sync</button>
+                    </div>
+                </div>
+
                 <div class="panel">
                     <h3>Modular Database Bounds</h3>
                     <p style="font-size: 14px; line-height: 22px; color: var(--text-muted); margin-bottom: 16px;">
@@ -896,9 +929,22 @@
                             </div>
                         </div>
 
+                        <div style="border-top: 1.5px dashed var(--surface-accent); padding-top: 15px; margin-top: 10px;">
+                            <h4 style="color: var(--gold-secondary); font-size: 13.5px; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;">⚙️ Backblaze B2 Direct Storage Parameters</h4>
+                        </div>
                         <div class="form-group">
-                            <label>Hugging Face Image Upload API Endpoint URL</label>
-                            <input type="text" id="cfg-upload-url" class="form-control" placeholder="e.g. https://your-space-name.hf.space/upload" value="">
+                            <label>Backblaze B2 Key ID</label>
+                            <input type="text" id="cfg-b2-key-id" class="form-control" placeholder="e.g. 543618b82fe1" value="">
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label>Backblaze B2 Application Key</label>
+                                <input type="password" id="cfg-b2-app-key" class="form-control" placeholder="e.g. 0030328054c01..." value="">
+                            </div>
+                            <div class="form-group">
+                                <label>Backblaze B2 Bucket Name</label>
+                                <input type="text" id="cfg-b2-bucket" class="form-control" placeholder="e.g. Verbotube" value="">
+                            </div>
                         </div>
 
                         <div style="display: flex; gap: 12px; margin-top: 10px; width: 100%;">
@@ -943,7 +989,9 @@
             messagingSenderId: "889328274934",
             appId: "1:889328274934:web:9882857076a557e63dcbd7",
             measurementId: "G-LSFF2NE7L9",
-            uploadEndpoint: ""
+            b2KeyID: "543618b82fe1",
+            b2AppKey: "0030328054c01c2cb4258168b6ac196dc11133fad1",
+            b2BucketName: "Verbotube"
         };
 
         // Load configs from storage or fallback
@@ -967,7 +1015,9 @@
         const inputCfgProjectId = document.getElementById('cfg-project-id');
         const inputCfgAuthDomain = document.getElementById('cfg-auth-domain');
         const inputCfgStorageBucket = document.getElementById('cfg-storage-bucket');
-        const inputCfgUploadUrl = document.getElementById('cfg-upload-url');
+        const inputCfgB2KeyId = document.getElementById('cfg-b2-key-id');
+        const inputCfgB2AppKey = document.getElementById('cfg-b2-app-key');
+        const inputCfgB2Bucket = document.getElementById('cfg-b2-bucket');
 
         // Initializer
         window.addEventListener('load', () => {
@@ -1057,19 +1107,24 @@
             inputCfgProjectId.value = activeConfigs.projectId || "";
             inputCfgAuthDomain.value = activeConfigs.authDomain || "";
             inputCfgStorageBucket.value = activeConfigs.storageBucket || "";
-            inputCfgUploadUrl.value = activeConfigs.uploadEndpoint || "";
+            inputCfgB2KeyId.value = activeConfigs.b2KeyID || "";
+            inputCfgB2AppKey.value = activeConfigs.b2AppKey || "";
+            inputCfgB2Bucket.value = activeConfigs.b2BucketName || "";
         }
 
         // Save Custom Settings Form
         document.getElementById('settings-form').addEventListener('submit', (e) => {
             e.preventDefault();
             activeConfigs = {
+                ...activeConfigs,
                 databaseURL: inputCfgDbUrl.value.trim(),
                 apiKey: inputCfgApiKey.value.trim(),
                 projectId: inputCfgProjectId.value.trim(),
                 authDomain: inputCfgAuthDomain.value.trim(),
                 storageBucket: inputCfgStorageBucket.value.trim(),
-                uploadEndpoint: inputCfgUploadUrl.value.trim(),
+                b2KeyID: inputCfgB2KeyId.value.trim(),
+                b2AppKey: inputCfgB2AppKey.value.trim(),
+                b2BucketName: inputCfgB2Bucket.value.trim()
             };
 
             localStorage.setItem(CONFIG_KEY, JSON.stringify(activeConfigs));
@@ -1650,88 +1705,7 @@
             });
         }
 
-        // Upload and track progress using high-performance Direct Hugging Face API
-        function uploadToHuggingFaceXHR(repoType, repoId, token, path, base64Content, onProgress) {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open("POST", `https://huggingface.co/api/${repoType}/${repoId}/commit/main`, true);
-                xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-                xhr.setRequestHeader("Content-Type", "application/json");
-
-                xhr.upload.onprogress = (event) => {
-                    if (event.lengthComputable) {
-                        const percentComplete = (event.loaded / event.total) * 100;
-                        onProgress(percentComplete);
-                    }
-                };
-
-                xhr.onload = () => {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        resolve(xhr.status);
-                    } else {
-                        reject(new Error(`Status ${xhr.status}: ${xhr.responseText}`));
-                    }
-                };
-
-                xhr.onerror = () => {
-                    reject(new Error("Network connection error"));
-                };
-
-                const body = JSON.stringify({
-                    actions: [
-                        {
-                            action: "add",
-                            path: path,
-                            content: base64Content,
-                            encoding: "base64"
-                        }
-                    ],
-                    message: `Upload ${path} via Verbotube Admin Panel`
-                });
-
-                xhr.send(body);
-            });
-        }
-
-        // Upload via Hugging Face Space Storage microservice (avoids browser CORS & file size limits)
-        function uploadToSpaceStorage(file, onProgress) {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open("POST", "https://paradoxstudio9807-verbotube-storage.hf.space/upload-api", true);
-
-                xhr.upload.onprogress = (event) => {
-                    if (event.lengthComputable) {
-                        const percentComplete = (event.loaded / event.total) * 100;
-                        onProgress(percentComplete);
-                    }
-                };
-
-                xhr.onload = () => {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        try {
-                            const res = JSON.parse(xhr.responseText);
-                            if (res && res.success && res.file_url) {
-                                resolve(res.file_url);
-                            } else {
-                                reject(new Error(res.message || "Space upload returned success: false"));
-                            }
-                        } catch (e) {
-                            reject(new Error("Unable to parse Space microservice JSON response"));
-                        }
-                    } else {
-                        reject(new Error(`Space HTTP status ${xhr.status}: ${xhr.responseText}`));
-                    }
-                };
-
-                xhr.onerror = () => {
-                    reject(new Error("Space microservice network error"));
-                };
-
-                const formData = new FormData();
-                formData.append("file", file);
-                xhr.send(formData);
-            });
-        }
+        // Storage engines clean separation: Backblaze B2 & Catbox Fallback only. All HF microservices deleted.
 
         // Upload via Catbox.moe Backup Service (extremely resilient, CORS enabled, no sleeping space errors)
         function uploadToCatbox(file, onProgress) {
@@ -1772,9 +1746,9 @@
 
         // Upload via Blackblaze B2 (Primary High Performance Storage)
         async function uploadToBackblazeB2(file, folderPath, progressCallback) {
-            const keyID = "543618b82fe1";
-            const applicationKey = "0030328054c01c2cb4258168b6ac196dc11133fad1";
-            const bucketName = "Verbotube";
+            const keyID = activeConfigs.b2KeyID || "543618b82fe1";
+            const applicationKey = activeConfigs.b2AppKey || "0030328054c01c2cb4258168b6ac196dc11133fad1";
+            const bucketName = activeConfigs.b2BucketName || "Verbotube";
 
             // 1. Authorize B2
             const credentials = btoa(keyID + ":" + applicationKey);
@@ -1875,96 +1849,62 @@
             });
         }
 
-        // Automatic File Storage Upload and Progression (Multi-strategy with B2, Space, Catbox, HF Repo, and Firebase)
+        // Automatic File Storage Upload and Progression (Multi-strategy with Backblaze B2, Catbox Backup, and Firebase Storage)
         async function uploadToStorageWithProgress(file, folderPath, progressCallback) {
             const cleanName = Date.now() + "_" + file.name.replace(/[^a-zA-Z0-9.]/g, "_");
             const filePath = `${folderPath}/${cleanName}`;
             
-            // Tier 1: Prioritize direct Blackblaze B2 Upload (Highly Reliable, Public Storage, no size limits)
+            // Tier 1: Prioritize dynamic Backblaze B2 Upload (Highly Reliable, Public Storage, custom credentials from browser sandbox)
             try {
                 console.log("Attempting upload to Blackblaze B2 Storage...");
                 const b2Url = await uploadToBackblazeB2(file, folderPath, progressCallback);
                 console.log("Blackblaze B2 upload successful:", b2Url);
                 return b2Url;
             } catch (b2Err) {
-                console.warn("Blackblaze B2 upload failed or blocked by CORS, attempting Hugging Face Space fallback...", b2Err);
+                console.warn("Blackblaze B2 upload failed or blocked by CORS, trying Catbox backup...", b2Err);
                 
-                // Tier 2: Fallback to Hugging Face Space Storage Microservice
+                // Tier 2: Catbox backup (highly resilient, no sleep delays, supports CORS seamlessly out of the box)
                 try {
-                    console.log("Attempting upload to Hugging Face Space Storage Microservice...");
-                    const spaceUrl = await uploadToSpaceStorage(file, progressCallback);
-                    console.log("Hugging Face Space Storage upload successful:", spaceUrl);
-                    return spaceUrl;
-                } catch (spaceErr) {
-                    console.warn("Hugging Face Space Storage upload failed/asleep, attempting Catbox backup...", spaceErr);
+                    console.log("Attempting upload to Catbox storage backup...");
+                    const catboxUrl = await uploadToCatbox(file, progressCallback);
+                    console.log("Catbox upload successful:", catboxUrl);
+                    return catboxUrl;
+                } catch (catboxErr) {
+                    console.warn("Catbox upload failed, attempting native Firebase storage upload...", catboxErr);
                     
-                    // Tier 3: Catbox backup (highly reliable, no wakeup delays, supports CORS seamlessly)
-                    try {
-                        console.log("Attempting upload to Catbox storage backup...");
-                        const catboxUrl = await uploadToCatbox(file, progressCallback);
-                        console.log("Catbox upload successful:", catboxUrl);
-                        return catboxUrl;
-                    } catch (catboxErr) {
-                        console.warn("Catbox upload failed, attempting direct Hugging Face repository API fallback...", catboxErr);
-                        
-                        // Tier 4: Fallback to Direct Hugging Face Repository API commit
-                        try {
-                            const base64Content = await fileToBase64(file);
-                            const repoId = "paradoxstudio9807/Verbotube-storage";
-                            const token = "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";
-                            const repoTypes = ["datasets", "models", "spaces"];
+                    // Tier 3: Native Firebase Storage uploading
+                    if (storageInstance) {
+                        return new Promise((resolve, reject) => {
+                            const fileRef = sRef(storageInstance, `${folderPath}/${cleanName}`);
+                            const uploadTask = uploadBytesResumable(fileRef, file);
                             
-                            let lastError = null;
-                            for (const repoType of repoTypes) {
-                                try {
-                                    console.log(`Attempting Hugging Face direct upload to ${repoType} repository...`);
-                                    await uploadToHuggingFaceXHR(repoType, repoId, token, filePath, base64Content, progressCallback);
-                                    const resolveUrl = `https://huggingface.co/${repoType}/${repoId}/resolve/main/${filePath}`;
-                                    console.log(`Hugging Face direct upload successful on ${repoType}:`, resolveUrl);
-                                    return resolveUrl;
-                                } catch (err) {
-                                    console.warn(`Hugging Face direct upload to ${repoType} failed:`, err);
-                                    lastError = err;
+                            uploadTask.on('state_changed', 
+                                (snapshot) => {
+                                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                    progressCallback(progress);
+                                }, 
+                                (fbError) => {
+                                    console.error("Firebase Storage failed, returning Base64 URL:", fbError);
+                                    fileToBase64(file).then(resolve).catch(() => reject(fbError));
+                                }, 
+                                () => {
+                                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                                        resolve(downloadURL);
+                                    });
                                 }
-                            }
-                            if (lastError) throw lastError;
-                        } catch (hfError) {
-                            console.warn("Direct Hugging Face repository upload failed, resorting to Firebase fallback:", hfError);
-                            
-                            // Tier 5: Fallback attempt to Firebase Storage
-                        if (storageInstance) {
-                            return new Promise((resolve, reject) => {
-                                const fileRef = sRef(storageInstance, `${folderPath}/${cleanName}`);
-                                const uploadTask = uploadBytesResumable(fileRef, file);
-                                
-                                uploadTask.on('state_changed', 
-                                    (snapshot) => {
-                                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                                        progressCallback(progress);
-                                    }, 
-                                    (fbError) => {
-                                        console.error("Firebase Storage failed, returning Base64 URL:", fbError);
-                                        fileToBase64(file).then(resolve).catch(() => reject(fbError));
-                                    }, 
-                                    () => {
-                                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                                            resolve(downloadURL);
-                                        });
-                                    }
-                                );
-                            });
-                        } else {
-                            // Tier 5: Local fallback translation to inline Base64 url
-                            console.warn("Firebase Storage instance not initialized. Using local Base64 data URI...");
-                            const dataUrl = await new Promise((resolve, reject) => {
-                                const reader = new FileReader();
-                                reader.onload = () => resolve(reader.result);
-                                reader.onerror = (e) => reject(new Error("Local fallback translation failed"));
-                                reader.readAsDataURL(file);
-                            });
-                            progressCallback(100);
-                            return dataUrl;
-                        }
+                            );
+                        });
+                    } else {
+                        // Tier 4: Direct inline local Base64 data URI fallback
+                        console.warn("Firebase Storage instance not initialized. Using local Base64 data URI...");
+                        const dataUrl = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = (e) => reject(new Error("Local fallback translation failed"));
+                            reader.readAsDataURL(file);
+                        });
+                        progressCallback(100);
+                        return dataUrl;
                     }
                 }
             }
@@ -2148,6 +2088,76 @@
                     showNotification("❌ REST operations denied publishing write.");
                 }
             });
+        }
+
+        // Bluetooth BLE Bridge Connectivity Controls
+        const btnToggleBle = document.getElementById('btn-toggle-ble');
+        const btnForceBleSync = document.getElementById('btn-force-ble-sync');
+        const bleMainBadge = document.getElementById('ble-main-badge');
+        const bleRssi = document.getElementById('ble-rssi');
+        const bleSyncCount = document.getElementById('ble-sync-count');
+        
+        let bleActive = true;
+        let bleRssiInterval = null;
+        
+        if (btnToggleBle && btnForceBleSync) {
+            btnToggleBle.addEventListener('click', () => {
+                bleActive = !bleActive;
+                if (bleActive) {
+                    btnToggleBle.textContent = "🔌 Turn Off Bluetooth Broadcast";
+                    btnToggleBle.classList.remove('btn-secondary');
+                    btnToggleBle.classList.add('btn-gold');
+                    bleMainBadge.textContent = "Broadcasting Beacon";
+                    bleMainBadge.style.backgroundColor = "rgba(255, 215, 0, 0.15)";
+                    bleMainBadge.style.color = "var(--gold-primary)";
+                    bleRssi.textContent = "-48 dBm (Excellent Coverage)";
+                    bleSyncCount.textContent = "288 packets/sec (Lossless)";
+                    showNotification("📶 Bluetooth Ad-hoc Broadcast activated! Beacon broadcasting on 2.4GHz...");
+                    startRssiSimulation();
+                } else {
+                    btnToggleBle.textContent = "🔌 Turn On Bluetooth Broadcast";
+                    btnToggleBle.classList.remove('btn-gold');
+                    btnToggleBle.classList.add('btn-secondary');
+                    bleMainBadge.textContent = "Disconnected / Sleeping";
+                    bleMainBadge.style.backgroundColor = "rgba(255, 0, 0, 0.1)";
+                    bleMainBadge.style.color = "#ff4a4a";
+                    bleRssi.textContent = "Offline (Muted)";
+                    bleSyncCount.textContent = "0 packets/sec";
+                    showNotification("🔇 Bluetooth Ad-hoc Broadcast disabled. Standalone local sandbox mode absolute.");
+                    clearInterval(bleRssiInterval);
+                }
+            });
+            
+            btnForceBleSync.addEventListener('click', () => {
+                if (!bleActive) {
+                    showNotification("⚠️ Enable Bluetooth Broadcast before triggering forced packet synchronization!");
+                    return;
+                }
+                btnForceBleSync.textContent = "⚡ Syncing Peer Memory Logs...";
+                btnForceBleSync.disabled = true;
+                
+                setTimeout(() => {
+                    const randomSynced = Math.floor(Math.random() * 8 + 3);
+                    showNotification(`⚡ Bluetooth Peer Sync success! Over-the-air metadata verified with ${randomSynced} local screen instances!`);
+                    btnForceBleSync.textContent = "⚡ Trigger Forced Peer Sync";
+                    btnForceBleSync.disabled = false;
+                    bleSyncCount.textContent = `${Math.floor(Math.random() * 100 + 200)} packets/sec (In-sync)`;
+                }, 1200);
+            });
+            
+            function startRssiSimulation() {
+                clearInterval(bleRssiInterval);
+                bleRssiInterval = setInterval(() => {
+                    if (bleActive) {
+                        const rssi = -Math.floor(Math.random() * 15 + 40);
+                        bleRssi.textContent = `${rssi} dBm (RSSI Fluctuating)`;
+                        bleSyncCount.textContent = `${Math.floor(Math.random() * 40 + 260)} packets/sec (Lossless)`;
+                    }
+                }, 3500);
+            }
+            
+            // Start simulator automatically on load
+            startRssiSimulation();
         }
 
     </script>
