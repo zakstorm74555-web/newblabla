@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verbotube - Professional Operations Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0e12;
+            --surface-color: #16181f;
+            --surface-accent: #21242e;
+            --gold-primary: #FFD700;
+            --gold-secondary: #E5C158;
+            --danger-color: #FF4D4D;
+            --success-color: #2ECC71;
+            --text-color: #ffffff;
+            --text-muted: #8b8f9a;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-display);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Access Authentication Overlay */
+        #auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-color);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease, visibility 0.4s;
+        }
+
+        .auth-card {
+            background-color: var(--surface-color);
+            border: 1.5px solid rgba(255, 215, 0, 0.15);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        }
+
+        .auth-logo {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--gold-primary);
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .auth-logo span {
+            color: #fff;
+        }
+
+        .pass-input {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--surface-accent);
+            border-radius: 8px;
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .pass-input:focus {
+            border-color: var(--gold-primary);
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--gold-primary);
+            color: #000;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn-auth:hover {
+            background-color: var(--gold-secondary);
+            transform: translateY(-1px);
+        }
+
+        /* Top bar styling */
+        header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid rgba(255,215,0,0.08);
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .header-logo {
+            font-size: 20px;
+            font-weight: 950;
+            color: var(--gold-primary);
+            letter-spacing: 1.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-logo span {
+            color: #fff;
+            font-weight: 400;
+            font-size: 15px;
+        }
+
+        .status-badge {
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(46, 204, 113, 0.4);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+        }
+
+        /* Live Indicator Pulse */
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+            animation: pulse-ring 1.8s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(46, 204, 113, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+
+        /* Sidebar & Workspace layout */
+        .wrapper {
+            display: flex;
+            flex: 1;
+            min-height: calc(100vh - 69px);
+        }
+
+        aside {
+            width: 270px;
+            background-color: var(--surface-color);
+            border-right: 1px solid rgba(255,215,0,0.08);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14.5px;
+            transition: all 0.25s;
+            cursor: pointer;
+            gap: 12px;
+        }
+
+        .nav-link.active, .nav-link:hover {
+            background-color: rgba(255, 215, 0, 0.08);
+            color: var(--gold-primary);
+        }
+
+        /* Working Panel */
+        main {
+            flex: 1;
+            padding: 35px 40px;
+            background-color: var(--bg-color);
+            overflow-y: auto;
+            max-height: calc(100vh - 69px);
+        }
+
+        .view-section {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 28px;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 28px;
+        }
+
+        /* Numeric Metric Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 35px;
+        }
+
+        .stat-card {
+            background-color: var(--surface-color);
+            border: 1px solid rgba(255,215,0,0.06);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .stat-card h4 {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-family: var(--font-mono);
+        }
+
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--gold-primary);
+        }
+
+        /* Structured Panels */
+        .panel {
+            background-color: var(--surface-color);
+            border-radius: 14px;
+            padding: 24px;
+            border: 1px solid rgba(255,215,0,0.06);
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .panel h3 {
+            font-size: 18px;
+            margin-bottom: 18px;
+            border-bottom: 1.5px solid var(--surface-accent);
+            padding-bottom: 12px;
+            color: var(--gold-primary);
+            font-weight: 700;
+        }
+
+        .row-grid {
+            display: grid;
+            grid-template-columns: 2fr 1.2fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .row-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Search Filter Row */
+        .search-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        /* Table components */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(255,215,0,0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            padding: 14px;
+            background-color: var(--surface-accent);
+            color: var(--gold-secondary);
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid rgba(255,215,0,0.04);
+            vertical-align: middle;
+            background-color: var(--surface-color);
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 215, 0, 0.02);
+        }
+
+        /* Badge design */
+        .badge-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Inputs & forms styling */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--surface-accent);
+            border-radius: 8px;
+            color: #fff;
+            outline: none;
+            font-family: inherit;
+            font-size: 14.5px;
+            transition: all 0.25s;
+        }
+
+        .form-control:focus {
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+        }
+
+        /* Action Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            gap: 8px;
+        }
+
+        .btn-gold {
+            background-color: var(--gold-primary);
+            color: #000;
+        }
+
+        .btn-gold:hover {
+            background-color: var(--gold-secondary);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background-color: rgba(255, 77, 77, 0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(255, 77, 77, 0.3);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-color);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .mini-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--gold-primary);
+            object-fit: cover;
+        }
+
+        /* Toast feedback alerts */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: var(--gold-primary);
+            color: #000;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-weight: 950;
+            font-size: 14px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            display: none;
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 2000;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Lock Overlay Screen -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-logo">VERBOTUBE <span>COMMAND CENTER</span></div>
+            <p class="subtitle" style="margin-bottom: 24px;">Establish a secure connection with your Firebase RTDB and operational environments.</p>
+            <input type="password" id="passkey-input" class="pass-input" placeholder="ENTER PORTAL ACCESS CODE" autofocus>
+            <button class="btn-auth" id="btn-portal-pass">Unlock Control Matrix</button>
+            <p id="err-text" style="color: var(--danger-color); font-size: 13px; font-weight: bold; margin-top: 15px; display: none;">Invalid credentials code. Session restricted.</p>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <header>
+        <div class="header-logo">🛡️ VERBOTUBE <span>OPERATIONS COMMAND CENTER</span></div>
+        <div class="status-badge">
+            <span class="pulse-dot"></span>
+            RTDB ONLINE SYNC
+        </div>
+    </header>
+
+    <div class="wrapper">
+        <!-- Sidebar Navigation -->
+        <aside>
+            <div class="nav-link active" data-tab="dashboard">
+                📁 Dashboard Metrics
+            </div>
+            <div class="nav-link" data-tab="videos">
+                🎥 Video / Shorts Vault
+            </div>
+            <div class="nav-link" data-tab="users">
+                👥 User Directories
+            </div>
+            <div class="nav-link" data-tab="campaigns">
+                🚀 Sponsored Ads
+            </div>
+            <div class="nav-link" data-tab="settings" style="margin-top: auto; border-top: 1.5px solid rgba(255,215,0,0.1); padding-top: 20px;">
+                ⚙️ Security & API SDK
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main>
+            <!-- 1. DASHBOARD VIEW -->
+            <section id="sect-dashboard" class="view-section active">
+                <h2>Administrative Matrix</h2>
+                <p class="subtitle">Secure control and instant modular synchronization across live smartphone environments.</p>
+
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <h4>Total Broadcast Items</h4>
+                        <div class="value" id="count-videos">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Platform Channels</h4>
+                        <div class="value" id="count-users">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Active Advertisements</h4>
+                        <div class="value" id="count-ads">--</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Modular Database Bounds</h3>
+                    <p style="font-size: 14px; line-height: 22px; color: var(--text-muted); margin-bottom: 16px;">
+                        This command applet connects directly to the Verbotube Firebase Realtime database server. Since you are utilizing real SDK subscriptions, any operations triggered here—such as altering verification tags, purging, or deploying campaigns—propagate to user screens instantly.
+                    </p>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-gold" id="btn-sync-dashboard">🔄 Real-time Resync</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. MANAGE VIDEOS VIEW -->
+            <section id="sect-videos" class="view-section">
+                <h2>Broadcast & Shorts Moderation</h2>
+                <p class="subtitle">Complete listed broadcasts, shorts, views, likes, and community reports index.</p>
+
+                <div class="panel">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                        <h3 style="border-bottom:none; padding-bottom:0; margin-bottom:0;">Core Publication Feed</h3>
+                        <div class="search-row">
+                            <input type="text" id="search-video-input" class="form-control" style="width: 260px;" placeholder="Search by title, artist, or tag...">
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Video Details</th>
+                                    <th>Creator / Uploader</th>
+                                    <th>Stats & Reports</th>
+                                    <th>Type / Visibility</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="videos-table-body">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Syncing live Firebase metadata...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. MANAGE USERS VIEW -->
+            <section id="sect-users" class="view-section">
+                <h2>User Directory & Verification Center</h2>
+                <p class="subtitle">Configure professional verification badge tags, verify channels, or enforce administrative bans.</p>
+
+                <div class="row-grid">
+                    <div class="panel">
+                        <h3>Registered Channels</h3>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Avatar</th>
+                                        <th>Uploader Channel Details</th>
+                                        <th>Verification Tag Badge</th>
+                                        <th>Settings Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: var(--text-muted);">Syncing live Firebase registry...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel" style="align-self: flex-start;">
+                        <h3>Custom Tag Verification Builder</h3>
+                        <form id="tag-form" style="display: flex; flex-direction: column;">
+                            <div class="form-group">
+                                <label for="form-tag-uid">Uploader UID Key (Selected)</label>
+                                <input type="text" id="form-tag-uid" class="form-control" style="background-color: var(--surface-accent);" readonly required placeholder="Click 'Verify Tag' on user">
+                            </div>
+                            <div class="form-group">
+                                <label for="form-tag-name">Verification Badge Text</label>
+                                <input type="text" id="form-tag-name" class="form-control" placeholder="e.g. Verified, Official, Partner, Elite">
+                            </div>
+                            <div class="form-group">
+                                <label for="form-tag-color">Tag HEX Background Color</label>
+                                <div style="display:flex; gap: 8px;">
+                                    <input type="color" id="form-tag-picker" class="form-control" style="width: 50px; padding: 2px" value="#FFD700">
+                                    <input type="text" id="form-tag-color" class="form-control" value="#FFD700" placeholder="#FFD700">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="form-tag-font">Custom Tag Font</label>
+                                <select id="form-tag-font" class="form-control">
+                                    <option value="SansSerif">Sans-Serif Pro</option>
+                                    <option value="Monospace">Monospace Code</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-gold" type="submit" style="margin-top: 10px;">Apply Custom Badge</button>
+                            <button class="btn btn-secondary" style="margin-top: 8px;" id="btn-clear-tag" type="button">Remove Badge</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. CAMPAIGNS VIEW -->
+            <section id="sect-campaigns" class="view-section">
+                <h2>Custom Video Advertisements Module</h2>
+                <p class="subtitle">Review active promotional details and deploy custom Gold campaigns containing interactive CTA buttons.</p>
+
+                <div class="row-grid">
+                    <!-- Create Campaign -->
+                    <div class="panel">
+                        <h3>Publish Dynamic Sponsor Ad</h3>
+                        <form id="ad-form" style="display: flex; flex-direction: column; gap: 14px;">
+                            <div class="form-group">
+                                <label>Campaign Visual Title</label>
+                                <input id="ad-title" type="text" class="form-control" placeholder="e.g. Premium Tech Gear Spotlight" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Streaming Video Stream URL</label>
+                                <input id="ad-video-url" type="text" class="form-control" placeholder="https://..." required>
+                            </div>
+                            <div class="form-group">
+                                <label>Image Thumbnail Poster URL</label>
+                                <input id="ad-thumb-url" type="text" class="form-control" placeholder="https://images.unsplash.com/..." required>
+                            </div>
+                            <div class="form-group">
+                                <label>Interactive CTA Action Text</label>
+                                <input id="ad-btn-text" type="text" class="form-control" placeholder="e.g. GET SPONSOR DEAL" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Interactive CTA Redirect URL</label>
+                                <input id="ad-btn-url" type="text" class="form-control" placeholder="e.g. https://discord.gg/Mf4BXZBPHF" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Campaign Short/Broadcast Description</label>
+                                <textarea id="ad-desc" class="form-control" style="height: 100px; resize: none;" placeholder="Sponsorship details shown on card details..." required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Promotion Feed Type</label>
+                                <select id="ad-is-short" class="form-control">
+                                    <option value="false">Standard Long Player Overlap Ad</option>
+                                    <option value="true">Short Swipe Carousel Ad</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-gold" type="submit">Deploy Sponsored Advertisement</button>
+                        </form>
+                    </div>
+
+                    <!-- Active Campaigns -->
+                    <div class="panel" style="align-self: flex-start;">
+                        <h3>Active Broadcast Sponsors</h3>
+                        <div id="active-ads-list" style="display: flex; flex-direction: column; gap:16px; margin-top: 15px;">
+                            <p style="font-size:13px; color:var(--text-muted); text-align:center;">Synchronizing active campaigns...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. SECURITY & SDK SETTINGS -->
+            <section id="sect-settings" class="view-section">
+                <h2>SDK Credentials & Space Settings</h2>
+                <p class="subtitle">Securely bind live Web SDK interfaces and specify custom microservice paths.</p>
+
+                <div class="panel" style="max-width: 800px;">
+                    <h3>Live API Connection Bounds</h3>
+                    <p style="font-size: 13.5px; color: var(--text-muted); line-height: 22px; margin-bottom: 20px;">
+                        To provide pristine separation, this administrative console saves your Firebase RTDB and backend endpoints directly in your secure, sandboxed browser <code style="color: var(--gold-primary); font-family: var(--font-mono);">localStorage</code>. Your keys never transfer through secondary servers.
+                    </p>
+
+                    <form id="settings-form" style="display: flex; flex-direction: column; gap:15px;">
+                        <div class="form-group">
+                            <label>Firebase Realtime Database URL</label>
+                            <input type="text" id="cfg-db-url" class="form-control" value="https://paravideo-1ac3b-default-rtdb.firebaseio.com/" placeholder="e.g. https://<project-id>-default-rtdb.firebaseio.com/" required>
+                        </div>
+                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label>Firebase API Key</label>
+                                <input type="password" id="cfg-api-key" class="form-control" placeholder="e.g. AIzaSy..." value="">
+                            </div>
+                            <div class="form-group">
+                                <label>Project ID</label>
+                                <input type="text" id="cfg-project-id" class="form-control" placeholder="e.g. paravideo-1ac3b" value="paravideo-1ac3b">
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label>Auth Domain</label>
+                                <input type="text" id="cfg-auth-domain" class="form-control" placeholder="e.g. paravideo-1ac3b.firebaseapp.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Storage Bucket</label>
+                                <input type="text" id="cfg-storage-bucket" class="form-control" placeholder="e.g. paravideo-1ac3b.appspot.com">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Hugging Face Image Upload API Endpoint URL</label>
+                            <input type="text" id="cfg-upload-url" class="form-control" placeholder="e.g. https://your-space-name.hf.space/upload" value="">
+                        </div>
+
+                        <div style="display: flex; gap: 12px; margin-top: 10px;">
+                            <button class="btn btn-gold" type="submit">Save Configurations</button>
+                            <button class="btn btn-secondary" type="button" id="btn-reset-settings">Reset to Default RTDB</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Feedback Toast -->
+    <div class="toast" id="system-toast">Operation finished successfully!</div>
+
+    <!-- Script Injection with Official Firebase Web API Module JS -->
+    <script type="module">
+        // Import modular Firebase SDKs via UNPKG CDN
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, get, set, child, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Global states
+        let dbRefInstance = null;
+        let firebaseAppInstance = null;
+        let cachedVideos = {};
+        let cachedUsers = {};
+
+        // Security Passkey Setup
+        const PASSKEY_KEY = "verbotube_admin_passkey_vault";
+        const CONFIG_KEY = "verbotube_admin_sdk_configs";
+
+        // Default Configs
+        const defaultConfigs = {
+            apiKey: "AIzaSyCl9F-zLLz-pd3N5dzQzbgUnNXExo3hEI4",
+            authDomain: "verbotube-fatahshaheenos.firebaseapp.com",
+            databaseURL: "https://verbotube-fatahshaheenos-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "verbotube-fatahshaheenos",
+            storageBucket: "verbotube-fatahshaheenos.firebasestorage.app",
+            messagingSenderId: "889328274934",
+            appId: "1:889328274934:web:9882857076a557e63dcbd7",
+            measurementId: "G-LSFF2NE7L9",
+            uploadEndpoint: ""
+        };
+
+        // Load configs from storage or fallback
+        let activeConfigs = JSON.parse(localStorage.getItem(CONFIG_KEY));
+        // Reset or migrate existing connections to the new target database specifically
+        if (!activeConfigs || activeConfigs.projectId !== "verbotube-fatahshaheenos") {
+            activeConfigs = { ...defaultConfigs };
+            localStorage.setItem(CONFIG_KEY, JSON.stringify(activeConfigs));
+        }
+
+        // DOM elements
+        const authOverlay = document.getElementById('auth-overlay');
+        const passkeyInput = document.getElementById('passkey-input');
+        const btnPortalPass = document.getElementById('btn-portal-pass');
+        const errText = document.getElementById('err-text');
+        const systemToast = document.getElementById('system-toast');
+
+        // Form Inputs
+        const inputCfgDbUrl = document.getElementById('cfg-db-url');
+        const inputCfgApiKey = document.getElementById('cfg-api-key');
+        const inputCfgProjectId = document.getElementById('cfg-project-id');
+        const inputCfgAuthDomain = document.getElementById('cfg-auth-domain');
+        const inputCfgStorageBucket = document.getElementById('cfg-storage-bucket');
+        const inputCfgUploadUrl = document.getElementById('cfg-upload-url');
+
+        // Initializer
+        window.addEventListener('load', () => {
+            // Populate Config Form Fields
+            populateSettingsForm();
+
+            // Check if passkey already saved
+            const savedPass = localStorage.getItem(PASSKEY_KEY);
+            if (savedPass === 'admin123' || savedPass === 'paravideo') {
+                transitionOutAuth();
+                bootstrapFirebase();
+            }
+        });
+
+        // Trigger Access Auth Verify
+        btnPortalPass.addEventListener('click', verifyPasskey);
+        passkeyInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verifyPasskey();
+        });
+
+        function verifyPasskey() {
+            const pass = passkeyInput.value.trim();
+            if (pass === 'admin123' || pass === 'paravideo') {
+                localStorage.setItem(PASSKEY_KEY, pass);
+                transitionOutAuth();
+                bootstrapFirebase();
+            } else {
+                errText.style.display = 'block';
+            }
+        }
+
+        function transitionOutAuth() {
+            authOverlay.style.opacity = '0';
+            setTimeout(() => {
+                authOverlay.style.display = 'none';
+            }, 500);
+        }
+
+        function showNotification(msg) {
+            systemToast.textContent = msg;
+            systemToast.style.display = 'block';
+            setTimeout(() => {
+                systemToast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Sidebar Navigation
+        document.querySelectorAll('aside .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                const targetTab = link.getAttribute('data-tab');
+                
+                document.querySelectorAll('aside .nav-link').forEach(l => l.classList.remove('active'));
+                document.querySelectorAll('main .view-section').forEach(s => s.classList.remove('active'));
+
+                link.classList.add('active');
+                document.getElementById(`sect-${targetTab}`).classList.add('active');
+            });
+        });
+
+        // Populate Config UI fields
+        function populateSettingsForm() {
+            inputCfgDbUrl.value = activeConfigs.databaseURL || "";
+            inputCfgApiKey.value = activeConfigs.apiKey || "";
+            inputCfgProjectId.value = activeConfigs.projectId || "";
+            inputCfgAuthDomain.value = activeConfigs.authDomain || "";
+            inputCfgStorageBucket.value = activeConfigs.storageBucket || "";
+            inputCfgUploadUrl.value = activeConfigs.uploadEndpoint || "";
+        }
+
+        // Save Custom Settings Form
+        document.getElementById('settings-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            activeConfigs = {
+                databaseURL: inputCfgDbUrl.value.trim(),
+                apiKey: inputCfgApiKey.value.trim(),
+                projectId: inputCfgProjectId.value.trim(),
+                authDomain: inputCfgAuthDomain.value.trim(),
+                storageBucket: inputCfgStorageBucket.value.trim(),
+                uploadEndpoint: inputCfgUploadUrl.value.trim(),
+            };
+
+            localStorage.setItem(CONFIG_KEY, JSON.stringify(activeConfigs));
+            showNotification("⚙️ SDK Configurations saved securely! Re-initializing...");
+            bootstrapFirebase();
+        });
+
+        // Reset Settings Form
+        document.getElementById('btn-reset-settings').addEventListener('click', () => {
+            if (confirm("Reset connection bounds to default Verbotube RTDB?")) {
+                activeConfigs = { ...defaultConfigs };
+                localStorage.setItem(CONFIG_KEY, JSON.stringify(activeConfigs));
+                populateSettingsForm();
+                showNotification("🔄 Reset completed. Re-initializing...");
+                bootstrapFirebase();
+            }
+        });
+
+        // Initialize Firebase SDK Module dynamically
+        function bootstrapFirebase() {
+            try {
+                // If app already configured, clean up context if firebase supports it
+                if (getApps().length > 0) {
+                    // Firebase doesn't support easy dynamic deletion in web out of box without browser reload, 
+                    // but we can retrieve or override the instances of databases.
+                }
+
+                const firebaseConfig = {
+                    databaseURL: activeConfigs.databaseURL,
+                    apiKey: activeConfigs.apiKey || undefined,
+                    authDomain: activeConfigs.authDomain || undefined,
+                    projectId: activeConfigs.projectId || undefined,
+                    storageBucket: activeConfigs.storageBucket || undefined,
+                    messagingSenderId: activeConfigs.messagingSenderId || "889328274934",
+                    appId: activeConfigs.appId || "1:889328274934:web:9882857076a557e63dcbd7",
+                    measurementId: activeConfigs.measurementId || "G-LSFF2NE7L9"
+                };
+
+                // Initialize App
+                if (getApps().length === 0) {
+                    firebaseAppInstance = initializeApp(firebaseConfig);
+                } else {
+                    firebaseAppInstance = getApp();
+                }
+
+                // Initialize RTDB
+                dbRefInstance = getDatabase(firebaseAppInstance);
+                
+                // Set Up live continuous data observers
+                setupLiveSyncObservers();
+                showNotification("⚡ Signed to live Realtime database.");
+            } catch (err) {
+                console.error("Firebase SDK init failure: ", err);
+                showNotification("⚠️ Connection boundary error. Verify your URL and keys.");
+            }
+        }
+
+        // Live Realtime Observers subscribing to RTDB path
+        function setupLiveSyncObservers() {
+            if (!dbRefInstance) return;
+
+            // 1. Observe Videos
+            const videosRefPath = ref(dbRefInstance, 'videos');
+            onValue(videosRefPath, (snapshot) => {
+                cachedVideos = snapshot.val() || {};
+                renderDashboardMetrics();
+                renderVideosModerationFeed();
+                renderSponsoredAdsCampaigns();
+            }, (error) => {
+                console.error("Videos subscription error:", error);
+            });
+
+            // 2. Observe Users
+            const usersRefPath = ref(dbRefInstance, 'users');
+            onValue(usersRefPath, (snapshot) => {
+                cachedUsers = snapshot.val() || {};
+                renderDashboardMetrics();
+                renderUsersDirectories();
+            }, (error) => {
+                console.error("Users subscription error:", error);
+            });
+        }
+
+        // Manual Resync Trigger
+        document.getElementById('btn-sync-dashboard').addEventListener('click', () => {
+            bootstrapFirebase();
+            showNotification("⚡ Realtime Sync boundaries verified!");
+        });
+
+        // Dynamic Calculations for metrics
+        function renderDashboardMetrics() {
+            const vKeys = Object.keys(cachedVideos);
+            const userKeys = Object.keys(cachedUsers);
+
+            let normalVideosList = vKeys.filter(k => !cachedVideos[k].isAd);
+            let adsList = vKeys.filter(k => cachedVideos[k].isAd);
+
+            document.getElementById('count-videos').textContent = normalVideosList.length;
+            document.getElementById('count-users').textContent = userKeys.length;
+            document.getElementById('count-ads').textContent = adsList.length;
+        }
+
+        // Interactive Moderation Table & Filter Logic
+        const searchInput = document.getElementById('search-video-input');
+        searchInput.addEventListener('input', renderVideosModerationFeed);
+
+        function renderVideosModerationFeed() {
+            const tbody = document.getElementById('videos-table-body');
+            tbody.innerHTML = '';
+
+            const searchFilter = searchInput.value.toLowerCase().trim();
+            const videosList = Object.values(cachedVideos).filter(vid => !vid.isAd);
+
+            if (videosList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding:30px;">No broadcast items found inside reference database.</td></tr>`;
+                return;
+            }
+
+            let renderedCount = 0;
+            videosList.forEach(vid => {
+                // Apply search filter constraints
+                const matchesTitle = vid.title && vid.title.toLowerCase().includes(searchFilter);
+                const matchesUploader = vid.uploaderName && vid.uploaderName.toLowerCase().includes(searchFilter);
+                const matchesCategory = vid.category && vid.category.toLowerCase().includes(searchFilter);
+
+                if (searchFilter && !matchesTitle && !matchesUploader && !matchesCategory) {
+                    return; 
+                }
+
+                renderedCount++;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <img src="${vid.thumbnailUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=160'}" style="width: 80px; height: 46px; border-radius: 6px; object-fit: cover; border:1px solid rgba(255,215,0,0.1)">
+                            <div>
+                                <strong style="color: #fff; font-size: 14px; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;">${vid.title || 'Untitled'}</strong>
+                                <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">${vid.id}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${vid.uploaderAvatar || 'https://api.dicebear.com/7.x/bottts/png'}" class="mini-avatar">
+                            <div>
+                                <span style="font-weight:700; font-size:13.5px;">${vid.uploaderName || 'Anonymous'}</span><br>
+                                <span style="font-size: 10px; color: var(--text-muted); font-family:var(--font-mono)">UID: ${vid.uploaderId || 'Unknown'}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span style="color: var(--gold-primary); font-weight:700;">👁️ ${vid.views || 0}</span> • <span style="color:#fff;">❤️ ${vid.likes || 0}</span><br>
+                        ${(vid.reportsCount || 0) > 0 ? `
+                            <span style="color: var(--danger-color); font-weight: bold; font-size:12px;">⚠️ ${vid.reportsCount} Reports</span>
+                        ` : `
+                            <span style="color: var(--text-muted); font-size:11px;">No complaints flagged</span>
+                        `}
+                    </td>
+                    <td>
+                        <span class="badge-tag" style="background: rgba(255,215,0,0.1); color: var(--gold-secondary);">${vid.isShort ? 'Short Swiper' : 'Broadcast Video'}</span><br>
+                        <span style="font-size: 11px; color: var(--text-muted);">${vid.visibility || 'Public'}</span>
+                    </td>
+                    <td>
+                        ${vid.isDeleted ? `
+                            <div style="font-size:12px; line-height:16px;">
+                                <span style="color: var(--danger-color); font-weight: bold; display:block;">🚫 Purged</span>
+                                <span style="color: var(--text-muted); font-size:10px; display:block; max-width: 140px; overflow:hidden; text-overflow:ellipsis;" title="${vid.deleteReason}">${vid.deleteReason}</span>
+                            </div>
+                        ` : `
+                            <button class="btn btn-danger btn-purge-action" data-id="${vid.id}" style="padding: 6px 12px; font-size:11.5px;">Purge</button>
+                        `}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (renderedCount === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding:30px;">No search results matches.</td></tr>`;
+            } else {
+                // Attach Event Listeners to Purge button
+                document.querySelectorAll('.btn-purge-action').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const targetId = btn.getAttribute('data-id');
+                        triggerBroadcastPurge(targetId);
+                    });
+                });
+            }
+        }
+
+        // Purge target video sequence
+        async function triggerBroadcastPurge(videoId) {
+            const reason = prompt("Enter administrative violation explanation for deleting this broadcast asset:");
+            if (reason === null) return; // operator canceled
+
+            try {
+                const vid = cachedVideos[videoId];
+                if (!vid) return;
+
+                const payload = {
+                    ...vid,
+                    isDeleted: true,
+                    deleteReason: reason || "Violations of platform Terms of Service Guidelines."
+                };
+
+                const dbRefPath = ref(dbRefInstance, `videos/${videoId}`);
+                await set(dbRefPath, payload);
+                showNotification("🚫 Broadcast asset purged and locked securely from app feeds.");
+            } catch (err) {
+                console.error("Purge operations failure: ", err);
+                showNotification("❌ Unable to sync deletion parameters with Firebase.");
+            }
+        }
+
+        // Verification Badge and users directories
+        function renderUsersDirectories() {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+
+            const usersList = Object.values(cachedUsers);
+            if (usersList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding:30px;">No registered channels located.</td></tr>`;
+                return;
+            }
+
+            usersList.forEach(u => {
+                const hasTag = u.customTag && u.customTag.trim().length > 0;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <img src="${u.avatarUrl || 'https://api.dicebear.com/7.x/bottts/png?seed=' + u.uid}" class="mini-avatar" style="width:40px; height:40px;">
+                    </td>
+                    <td>
+                        <strong style="color: #fff; font-size: 14px;">${u.displayName || 'Unnamed Channel'}</strong><br>
+                        <span style="font-size: 11px; color: var(--text-muted);">${u.email || 'No email synced'}</span><br>
+                        <span style="font-size: 10px; color: var(--gold-secondary); font-family: var(--font-mono)">UID: ${u.uid}</span>
+                    </td>
+                    <td>
+                        ${hasTag ? `
+                            <span class="badge-tag" style="background-color: ${u.tagColorHex || '#FF0000'}; color: #fff; font-family: ${u.tagFontFamily === 'Monospace' ? 'monospace' : 'inherit'};">
+                                ${u.customTag}
+                            </span>
+                        ` : `
+                            <span style="color:var(--text-muted); font-size:11px;">Standard Channel</span>
+                        `}
+                    </td>
+                    <td>
+                        <div style="display:flex; gap: 8px;">
+                            <button class="btn btn-gold btn-verify-user" data-uid="${u.uid}" style="padding: 6px 14px; font-size:11px;">Configure Tag</button>
+                            ${u.isBanned ? `
+                                <button class="btn btn-secondary btn-unban-user" data-uid="${u.uid}" style="padding: 6px 14px; font-size:11px; border-color: var(--success-color); color: var(--success-color);">Restore</button>
+                            ` : `
+                                <button class="btn btn-danger btn-ban-user" data-uid="${u.uid}" style="padding: 6px 14px; font-size:11px;">Suspend</button>
+                            `}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Register handlers
+            document.querySelectorAll('.btn-verify-user').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const selectUid = btn.getAttribute('data-uid');
+                    loadUserIntoTagBuilder(selectUid);
+                });
+            });
+
+            document.querySelectorAll('.btn-ban-user').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const selectUid = btn.getAttribute('data-uid');
+                    executeChannelBan(selectUid);
+                });
+            });
+
+            document.querySelectorAll('.btn-unban-user').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const selectUid = btn.getAttribute('data-uid');
+                    executeAccessRestore(selectUid);
+                });
+            });
+        }
+
+        const tagPicker = document.getElementById('form-tag-picker');
+        const tagColorInput = document.getElementById('form-tag-color');
+        const tagUidInput = document.getElementById('form-tag-uid');
+        const tagNameInput = document.getElementById('form-tag-name');
+        const tagFontSelect = document.getElementById('form-tag-font');
+
+        // Bidirectional HEX color inputs sync
+        tagPicker.addEventListener('input', (e) => {
+            tagColorInput.value = e.target.value.toUpperCase();
+        });
+        tagColorInput.addEventListener('input', (e) => {
+            if (e.target.value.startsWith('#') && e.target.value.length === 7) {
+                tagPicker.value = e.target.value;
+            }
+        });
+
+        function loadUserIntoTagBuilder(uid) {
+            const u = cachedUsers[uid];
+            if (!u) return;
+
+            tagUidInput.value = uid;
+            tagNameInput.value = u.customTag || "Verified";
+            tagColorInput.value = (u.tagColorHex || "#FFD700").toUpperCase();
+            tagPicker.value = u.tagColorHex || "#FFD700";
+            tagFontSelect.value = u.tagFontFamily || "SansSerif";
+
+            showNotification(`🎯 Selected creator @${u.displayName || u.uid} details.`);
+        }
+
+        // Save Custom Badge Application
+        document.getElementById('tag-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const targetUid = tagUidInput.value;
+            if (!targetUid) {
+                alert("Please select a target channel by clicking 'Configure Tag' button first.");
+                return;
+            }
+
+            try {
+                const u = cachedUsers[targetUid];
+                const updated = {
+                    ...u,
+                    customTag: tagNameInput.value.trim(),
+                    tagColorHex: tagColorInput.value.trim(),
+                    tagFontFamily: tagFontSelect.value
+                };
+
+                const dbRefPath = ref(dbRefInstance, `users/${targetUid}`);
+                await set(dbRefPath, updated);
+                showNotification("💎 Verification badge and custom aesthetics updated instantly!");
+            } catch (err) {
+                console.error("Save Verification Tag badge error: ", err);
+                showNotification("❌ API operations fails writing to Firebase registry.");
+            }
+        });
+
+        // Clear verification tags
+        document.getElementById('btn-clear-tag').addEventListener('click', async () => {
+            const targetUid = tagUidInput.value;
+            if (!targetUid) return;
+
+            try {
+                const u = cachedUsers[targetUid];
+                const updated = {
+                    ...u,
+                    customTag: "",
+                    tagColorHex: "",
+                    tagFontFamily: ""
+                };
+
+                const dbRefPath = ref(dbRefInstance, `users/${targetUid}`);
+                await set(dbRefPath, updated);
+                tagNameInput.value = "";
+                showNotification("🗑️ Verification tag removed successfully!");
+            } catch (err) {
+                console.error("Error purging tags: ", err);
+                showNotification("❌ Firebase operations failure.");
+            }
+        });
+
+        // Suspend user channel
+        async function executeChannelBan(uid) {
+            const explain = prompt("State operational reason to suspend this creator channel from the Verbotube network:");
+            if (explain === null) return;
+
+            try {
+                const u = cachedUsers[uid];
+                const updated = {
+                    ...u,
+                    isBanned: true,
+                    banReason: explain || "Access restricted due to compliance or terms violations."
+                };
+
+                const dbRefPath = ref(dbRefInstance, `users/${uid}`);
+                await set(dbRefPath, updated);
+                showNotification(`🔴 Access suspended and locked for @${u.displayName || u.uid}.`);
+            } catch (err) {
+                console.error("Ban operations fail: ", err);
+                showNotification("❌ REST operations boundary restricted.");
+            }
+        }
+
+        // Restore suspended user channel
+        async function executeAccessRestore(uid) {
+            try {
+                const u = cachedUsers[uid];
+                const updated = {
+                    ...u,
+                    isBanned: false,
+                    banReason: ""
+                };
+
+                const dbRefPath = ref(dbRefInstance, `users/${uid}`);
+                await set(dbRefPath, updated);
+                showNotification(`🟢 Access restored for channel @${u.displayName || u.uid}!`);
+            } catch (err) {
+                console.error("Restore operations fail: ", err);
+                showNotification("❌ Operational boundary failed.");
+            }
+        }
+
+        // Campaigns & Advertisements deploying
+        function renderSponsoredAdsCampaigns() {
+            const list = document.getElementById('active-ads-list');
+            list.innerHTML = '';
+
+            const ads = Object.values(cachedVideos).filter(v => v.isAd === true);
+            if (ads.length === 0) {
+                list.innerHTML = `<p style="font-size:13px; color:var(--text-muted); text-align:center; padding: 20px 0;">No active sponsorship campaigns live on smartphones.</p>`;
+                return;
+            }
+
+            ads.forEach(ad => {
+                const box = document.createElement('div');
+                box.style.backgroundColor = 'var(--surface-accent)';
+                box.style.padding = '16px';
+                box.style.borderRadius = '10px';
+                box.style.border = '1px dashed var(--gold-primary)';
+                box.style.display = 'flex';
+                box.style.flexDirection = 'column';
+                box.style.gap = '8px';
+
+                box.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="badge-tag" style="background-color: var(--gold-primary); color: #000; font-weight:900;">📢 SPONSOR LIVE</span>
+                        <button class="btn btn-danger btn-purge-ad" data-id="${ad.id}" style="padding: 4px 10px; font-size: 11px;">Stop Campaign</button>
+                    </div>
+                    <div>
+                        <h4 style="color:#fff; font-size:14px; margin-bottom:4px; font-weight:700;">${ad.title}</h4>
+                        <p style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px; line-height:16px;">${ad.description}</p>
+                        <a href="${ad.adButtonUrl}" target="_blank" style="display:inline-flex; align-items:center; gap: 6px; font-size:12px; font-weight:bold; color:#000; background-color: var(--gold-primary); text-decoration:none; padding: 6px 12px; border-radius:4px;">
+                            ${ad.adButtonText || 'VISIT NOW'} ↗️
+                        </a>
+                    </div>
+                    <div style="font-size:10px; color:var(--text-muted); font-family:var(--font-mono); margin-top:4px; border-top:1px solid rgba(255,215,0,0.05); padding-top:6px;">
+                        PROMO TYPE: ${ad.isShort ? 'Short Swiper' : 'Player Spot'} • ID: ${ad.id}
+                    </div>
+                `;
+                list.appendChild(box);
+            });
+
+            // Register Purge Ads
+            document.querySelectorAll('.btn-purge-ad').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-id');
+                    purgeAdCampaign(targetId);
+                });
+            });
+        }
+
+        // Stop Campaign and remove completely
+        async function purgeAdCampaign(adId) {
+            if (!confirm("Are you sure you want to stop and delete this sponsored campaign from all user reels?")) return;
+
+            try {
+                const dbRefPath = ref(dbRefInstance, `videos/${adId}`);
+                await remove(dbRefPath);
+                showNotification("⏹️ Sponsored campaign terminated and cleared completely.");
+            } catch (err) {
+                console.error("Terminating ad campaign failure: ", err);
+                showNotification("❌ REST operations boundary fail on Firebase.");
+            }
+        }
+
+        // Deploy Sponsored Ad Campaign
+        document.getElementById('ad-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const adId = 'ad_' + Math.floor(Math.random() * 900000 + 100000);
+
+            const title = document.getElementById('ad-title').value.trim();
+            const videoUrl = document.getElementById('ad-video-url').value.trim();
+            const thumbnailUrl = document.getElementById('ad-thumb-url').value.trim();
+            const adButtonText = document.getElementById('ad-btn-text').value.trim();
+            const adButtonUrl = document.getElementById('ad-btn-url').value.trim();
+            const description = document.getElementById('ad-desc').value.trim();
+            const isShort = document.getElementById('ad-is-short').value === "true";
+
+            try {
+                const payloadAd = {
+                    id: adId,
+                    title,
+                    description,
+                    videoUrl,
+                    thumbnailUrl: thumbnailUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
+                    uploaderId: "admin_ops_desk",
+                    uploaderName: "Sponsor Partner",
+                    uploaderAvatar: "https://api.dicebear.com/7.x/bottts/png?seed=sponsor",
+                    views: 0,
+                    likes: 0,
+                    reportsCount: 0,
+                    timestamp: Date.now(),
+                    visibility: "Public",
+                    isShort,
+                    isAd: true,
+                    adButtonText,
+                    adButtonUrl,
+                    isDeleted: false,
+                    deleteReason: ""
+                };
+
+                const dbRefPath = ref(dbRefInstance, `videos/${adId}`);
+                await set(dbRefPath, payloadAd);
+                
+                showNotification("🎉 Ad Campaign deployed live successfully across channels!");
+                document.getElementById('ad-form').reset();
+            } catch (err) {
+                console.error("Deploy Ad campaign error: ", err);
+                showNotification("❌ Firebase operations failure.");
+            }
+        });
+
+    </script>
+</body>
+</html>
