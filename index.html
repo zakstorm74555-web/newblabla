@@ -562,31 +562,104 @@
                 <h2>Broadcast & Shorts Moderation</h2>
                 <p class="subtitle">Complete listed broadcasts, shorts, views, likes, and community reports index.</p>
 
-                <div class="panel">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                        <h3 style="border-bottom:none; padding-bottom:0; margin-bottom:0;">Core Publication Feed</h3>
-                        <div class="search-row">
-                            <input type="text" id="search-video-input" class="form-control" style="width: 260px;" placeholder="Search by title, artist, or tag...">
+                <div class="row-grid">
+                    <!-- Left: Video Feed -->
+                    <div class="panel">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; gap: 10px; flex-wrap: wrap;">
+                            <h3 style="border-bottom:none; padding-bottom:0; margin-bottom:0;">Core Publication Feed</h3>
+                            <div class="search-row" style="margin-bottom:0px;">
+                                <input type="text" id="search-video-input" class="form-control" style="width: 240px;" placeholder="Search by title, artist, or tag...">
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Video Details</th>
+                                        <th>Creator / Uploader</th>
+                                        <th>Stats & Reports</th>
+                                        <th>Type & Feed</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="videos-table-body">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; color: var(--text-muted);">Syncing live Firebase metadata...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Video Details</th>
-                                    <th>Creator / Uploader</th>
-                                    <th>Stats & Reports</th>
-                                    <th>Type / Visibility</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="videos-table-body">
-                                <tr>
-                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Syncing live Firebase metadata...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+                    <!-- Right: Publish Content Video -->
+                    <div class="panel" style="align-self: flex-start;">
+                        <h3>Publish Content Video</h3>
+                        <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 15px;">Pick local files or fill direct URL points to instantly publish to streams.</p>
+                        <form id="publish-video-form" style="display: flex; flex-direction: column; gap: 14px;">
+                            <div class="form-group">
+                                <label>Video Title</label>
+                                <input id="new-vid-title" type="text" class="form-control" placeholder="e.g. Majestic Mountains Sunset drone" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Asset Video File (Auto Storage Upload)</label>
+                                <div style="display: flex; gap: 6px; flex-direction: column;">
+                                    <input type="file" id="picker-vid-file" class="form-control" accept="video/*" style="opacity: 0.9;">
+                                    <input type="text" id="new-vid-url" class="form-control" placeholder="Streaming Video URL (autofilled or paste link)" required>
+                                    <div class="upload-progress-container" id="prog-vid-container" style="display:none; width: 100%; height: 6px; background-color: var(--surface-accent); border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                                        <div class="upload-progress-bar" id="prog-vid-bar" style="width: 0%; height: 100%; background-color: var(--gold-primary); transition: width 0.15s ease;"></div>
+                                    </div>
+                                    <span id="log-vid-upload" style="font-size: 11px; color: var(--gold-secondary);"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Asset Video Thumbnail (Auto Storage Upload)</label>
+                                <div style="display: flex; gap: 8px; flex-direction: column;">
+                                    <input type="file" id="picker-vid-thumb" class="form-control" accept="image/*" style="opacity: 0.9;">
+                                    <input type="text" id="new-vid-thumb-url" class="form-control" placeholder="Thumbnail URL (autofilled or paste link)" required>
+                                    <div class="upload-progress-container" id="prog-thumb-container" style="display:none; width: 100%; height: 6px; background-color: var(--surface-accent); border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                                        <div class="upload-progress-bar" id="prog-thumb-bar" style="width: 0%; height: 100%; background-color: var(--gold-primary); transition: width 0.15s ease;"></div>
+                                    </div>
+                                    <span id="log-thumb-upload" style="font-size: 11px; color: var(--gold-secondary);"></span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Video Category</label>
+                                <select id="new-vid-category" class="form-control">
+                                    <option value="General">General</option>
+                                    <option value="Technology">Technology</option>
+                                    <option value="Gaming">Gaming</option>
+                                    <option value="Music">Music</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Entertainment">Entertainment</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Uploader Creator Channel</label>
+                                <select id="new-vid-uploader-select" class="form-control" required>
+                                    <option value="">-- Syncing channels list --</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Video Description</label>
+                                <textarea id="new-vid-desc" class="form-control" style="height: 70px; resize: none;" placeholder="Provide brief description metadata for feeds..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Broadcast Feed Format</label>
+                                <select id="new-vid-is-short" class="form-control">
+                                    <option value="false">Standard Long Player</option>
+                                    <option value="true">Short Swipe Carousel (Shorts)</option>
+                                </select>
+                            </div>
+
+                            <button class="btn btn-gold" type="submit" id="btn-publish-video" style="margin-top:5px;">Publish Content Broadcast</button>
+                        </form>
                     </div>
                 </div>
             </section>
@@ -594,9 +667,10 @@
             <!-- 3. MANAGE USERS VIEW -->
             <section id="sect-users" class="view-section">
                 <h2>User Directory & Verification Center</h2>
-                <p class="subtitle">Configure professional verification badge tags, verify channels, or enforce administrative bans.</p>
+                <p class="subtitle">Enables verification tags, profile setup, and administrative channel registrations.</p>
 
                 <div class="row-grid">
+                    <!-- Left: Registered Channels -->
                     <div class="panel">
                         <h3>Registered Channels</h3>
                         <div class="table-responsive">
@@ -611,41 +685,104 @@
                                 </thead>
                                 <tbody id="users-table-body">
                                     <tr>
-                                        <td colspan="4" style="text-align: center; color: var(--text-muted);">Syncing live Firebase registry...</td>
+                                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding:30px;">Syncing live Firebase registry...</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <div class="panel" style="align-self: flex-start;">
-                        <h3>Custom Tag Verification Builder</h3>
-                        <form id="tag-form" style="display: flex; flex-direction: column;">
-                            <div class="form-group">
-                                <label for="form-tag-uid">Uploader UID Key (Selected)</label>
-                                <input type="text" id="form-tag-uid" class="form-control" style="background-color: var(--surface-accent);" readonly required placeholder="Click 'Verify Tag' on user">
-                            </div>
-                            <div class="form-group">
-                                <label for="form-tag-name">Verification Badge Text</label>
-                                <input type="text" id="form-tag-name" class="form-control" placeholder="e.g. Verified, Official, Partner, Elite">
-                            </div>
-                            <div class="form-group">
-                                <label for="form-tag-color">Tag HEX Background Color</label>
-                                <div style="display:flex; gap: 8px;">
-                                    <input type="color" id="form-tag-picker" class="form-control" style="width: 50px; padding: 2px" value="#FFD700">
-                                    <input type="text" id="form-tag-color" class="form-control" value="#FFD700" placeholder="#FFD700">
+                    <!-- Right Column: Settings and Manual Register -->
+                    <div style="display: flex; flex-direction: column; gap: 30px;">
+                        <!-- Badge Tag builder -->
+                        <div class="panel">
+                            <h3>Custom Tag Verification Builder</h3>
+                            <form id="tag-form" style="display: flex; flex-direction: column;">
+                                <div class="form-group">
+                                    <label for="form-tag-uid">Uploader UID Key (Selected)</label>
+                                    <input type="text" id="form-tag-uid" class="form-control" style="background-color: var(--surface-accent);" readonly required placeholder="Click 'Configure Tag' on user">
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="form-tag-font">Custom Tag Font</label>
-                                <select id="form-tag-font" class="form-control">
-                                    <option value="SansSerif">Sans-Serif Pro</option>
-                                    <option value="Monospace">Monospace Code</option>
-                                </select>
-                            </div>
-                            <button class="btn btn-gold" type="submit" style="margin-top: 10px;">Apply Custom Badge</button>
-                            <button class="btn btn-secondary" style="margin-top: 8px;" id="btn-clear-tag" type="button">Remove Badge</button>
-                        </form>
+                                <div class="form-group">
+                                    <label for="form-tag-name">Verification Badge Text</label>
+                                    <input type="text" id="form-tag-name" class="form-control" placeholder="e.g. Verified, Official, Partner, Elite">
+                                </div>
+                                <div class="form-group">
+                                    <label for="form-tag-color">Tag HEX Background Color</label>
+                                    <div style="display:flex; gap: 8px;">
+                                        <input type="color" id="form-tag-picker" class="form-control" style="width: 50px; padding: 2px" value="#FFD700">
+                                        <input type="text" id="form-tag-color" class="form-control" value="#FFD700" placeholder="#FFD700">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="form-tag-font">Custom Tag Font</label>
+                                    <select id="form-tag-font" class="form-control">
+                                        <option value="SansSerif">Sans-Serif Pro</option>
+                                        <option value="Monospace">Monospace Code</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-gold" type="submit" style="margin-top: 10px;">Apply Custom Badge</button>
+                                <button class="btn btn-secondary" style="margin-top: 8px;" id="btn-clear-tag" type="button">Remove Badge</button>
+                            </form>
+                        </div>
+
+                        <!-- Register Channel Creator Form -->
+                        <div class="panel">
+                            <h3>Register Creator Channel</h3>
+                            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 15px;">Manually write and subscribe clean new channels to the mobile database.</p>
+                            <form id="create-channel-form" style="display: flex; flex-direction: column; gap: 14px;">
+                                <div class="form-group">
+                                    <label>Channel ID (UID - Unique Alphanumeric)</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="text" id="new-channel-uid" class="form-control" placeholder="e.g. fatah_gaming" required>
+                                        <button class="btn btn-secondary" type="button" id="btn-gen-uid" style="padding: 6px 12px; font-size:11px; text-transform: none;">Generate</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Display Name</label>
+                                    <input type="text" id="new-channel-name" class="form-control" placeholder="e.g. Fatah Gaming Studio" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Channel Email Contact</label>
+                                    <input type="email" id="new-channel-email" class="form-control" placeholder="e.g. fatah@gmail.com" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Channel Avatar Photo (Auto Storage Upload)</label>
+                                    <div style="display: flex; gap: 8px; flex-direction: column;">
+                                        <input type="file" id="picker-avatar-file" class="form-control" accept="image/*" style="opacity: 0.9;">
+                                        <input type="text" id="new-channel-avatar" class="form-control" placeholder="Avatar Photo URL (autofilled or paste link)">
+                                        <div class="upload-progress-container" id="prog-avatar-container" style="display:none; width: 100%; height: 6px; background-color: var(--surface-accent); border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                                            <div class="upload-progress-bar" id="prog-avatar-bar" style="width: 0%; height: 100%; background-color: var(--gold-primary); transition: width 0.15s ease;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Channel Banner Artwork (Auto Storage Upload)</label>
+                                    <div style="display: flex; gap: 8px; flex-direction: column;">
+                                        <input type="file" id="picker-banner-file" class="form-control" accept="image/*" style="opacity: 0.9;">
+                                        <input type="text" id="new-channel-banner" class="form-control" placeholder="Banner Artwork URL (autofilled or paste link)">
+                                        <div class="upload-progress-container" id="prog-banner-container" style="display:none; width: 100%; height: 6px; background-color: var(--surface-accent); border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                                            <div class="upload-progress-bar" id="prog-banner-bar" style="width: 0%; height: 100%; background-color: var(--gold-primary); transition: width 0.15s ease;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Initial Subscribers Count</label>
+                                    <input type="number" id="new-channel-subs" class="form-control" value="25000" min="0">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Channel Bio / Description</label>
+                                    <textarea id="new-channel-desc" class="form-control" style="height: 60px; resize: none;" placeholder="Provide brief channel about information..."></textarea>
+                                </div>
+
+                                <button class="btn btn-gold" type="submit" id="btn-register-channel" style="margin-top: 5px;">Register Channel Creator</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -664,14 +801,29 @@
                                 <label>Campaign Visual Title</label>
                                 <input id="ad-title" type="text" class="form-control" placeholder="e.g. Premium Tech Gear Spotlight" required>
                             </div>
+                            
                             <div class="form-group">
-                                <label>Streaming Video Stream URL</label>
-                                <input id="ad-video-url" type="text" class="form-control" placeholder="https://..." required>
+                                <label>Asset Promo Video (Auto Storage Upload)</label>
+                                <div style="display: flex; gap: 6px; flex-direction: column;">
+                                    <input type="file" id="picker-ad-video" class="form-control" accept="video/*" style="opacity: 0.9;">
+                                    <input id="ad-video-url" type="text" class="form-control" placeholder="Ad Streaming Video URL (autofilled or paste link)" required>
+                                    <div class="upload-progress-container" id="prog-ad-video-container" style="display:none; width: 100%; height: 6px; background-color: var(--surface-accent); border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                                        <div class="upload-progress-bar" id="prog-ad-video-bar" style="width: 0%; height: 100%; background-color: var(--gold-primary); transition: width 0.15s ease;"></div>
+                                    </div>
+                                </div>
                             </div>
+
                             <div class="form-group">
-                                <label>Image Thumbnail Poster URL</label>
-                                <input id="ad-thumb-url" type="text" class="form-control" placeholder="https://images.unsplash.com/..." required>
+                                <label>Asset Image Thumbnail (Auto Storage Upload)</label>
+                                <div style="display: flex; gap: 8px; flex-direction: column;">
+                                    <input type="file" id="picker-ad-thumb" class="form-control" accept="image/*" style="opacity: 0.9;">
+                                    <input id="ad-thumb-url" type="text" class="form-control" placeholder="Ad Image Thumbnail URL (autofilled or paste link)" required>
+                                    <div class="upload-progress-container" id="prog-ad-thumb-container" style="display:none; width: 100%; height: 6px; background-color: var(--surface-accent); border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                                        <div class="upload-progress-bar" id="prog-ad-thumb-bar" style="width: 0%; height: 100%; background-color: var(--gold-primary); transition: width 0.15s ease;"></div>
+                                    </div>
+                                </div>
                             </div>
+
                             <div class="form-group">
                                 <label>Interactive CTA Action Text</label>
                                 <input id="ad-btn-text" type="text" class="form-control" placeholder="e.g. GET SPONSOR DEAL" required>
@@ -769,11 +921,13 @@
         import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, get, set, child, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         // Global states
         let dbRefInstance = null;
         let firebaseAppInstance = null;
         let authInstance = null;
+        let storageInstance = null;
         let cachedVideos = {};
         let cachedUsers = {};
 
@@ -960,6 +1114,14 @@
 
                 // Initialize RTDB
                 dbRefInstance = getDatabase(firebaseAppInstance);
+
+                // Initialize Storage
+                try {
+                    storageInstance = getStorage(firebaseAppInstance);
+                } catch(se) {
+                    console.warn("Storage registration bypassed: ", se);
+                    storageInstance = null;
+                }
                 
                 // Track sign-in states
                 onAuthStateChanged(authInstance, (user) => {
@@ -1008,6 +1170,7 @@
                 cachedUsers = snapshot.val() || {};
                 renderDashboardMetrics();
                 renderUsersDirectories();
+                syncUploaderChannelsDropdown();
             }, (error) => {
                 console.error("Users subscription error:", error);
             });
@@ -1442,6 +1605,255 @@
                 showNotification("❌ Firebase operations failure.");
             }
         });
+
+        // ------------------ INTERACTIVE DYNAMIC RETRIVAL UPGRADES ------------------
+
+        // Redirection sync dropdown selector for channels
+        function syncUploaderChannelsDropdown() {
+            const selectEl = document.getElementById('new-vid-uploader-select');
+            if (!selectEl) return;
+            selectEl.innerHTML = '';
+            
+            const usersList = Object.values(cachedUsers);
+            if (usersList.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "admin_ops_desk";
+                opt.textContent = "Standard Admin Channel (no custom channels registered yet)";
+                selectEl.appendChild(opt);
+                return;
+            }
+            
+            // Add a default admin option always as fallback
+            const optAdmin = document.createElement('option');
+            optAdmin.value = "admin_ops_desk";
+            optAdmin.textContent = "Verbotube Administrator (ID: admin_ops_desk)";
+            selectEl.appendChild(optAdmin);
+            
+            usersList.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.uid;
+                opt.textContent = `${u.displayName || 'Unnamed Channel'} (UID: ${u.uid})`;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        // Automatic File Storage Upload and Progression
+        function uploadToStorageWithProgress(file, folderPath, progressCallback) {
+            return new Promise((resolve, reject) => {
+                // If storageInstance is not initialized, fallback to convert the asset to a Base64 string automatically!
+                if (!storageInstance) {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = (e) => reject(new Error("Local translation failed"));
+                    reader.readAsDataURL(file);
+                    progressCallback(100);
+                    return;
+                }
+                
+                const cleanName = Date.now() + "_" + file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+                const fileRef = sRef(storageInstance, `${folderPath}/${cleanName}`);
+                const uploadTask = uploadBytesResumable(fileRef, file);
+                
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressCallback(progress);
+                    }, 
+                    (error) => {
+                        console.warn("Storage upload failed, falling back to local Base64 string:", error);
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(error);
+                        reader.readAsDataURL(file);
+                    }, 
+                    () => {
+                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                            resolve(downloadURL);
+                        });
+                    }
+                );
+            });
+        }
+
+        // Generic File Upload Wiring Helper
+        function setupFileUploadingForElement(fileInputId, textInputId, progressContainerId, progressBarId, logId) {
+            const fileInput = document.getElementById(fileInputId);
+            const textInput = document.getElementById(textInputId);
+            const progressContainer = document.getElementById(progressContainerId);
+            const progressBar = document.getElementById(progressBarId);
+            const logSpan = logId ? document.getElementById(logId) : null;
+            
+            if (!fileInput || !textInput) return;
+            
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (progressContainer) progressContainer.style.display = 'block';
+                if (progressBar) progressBar.style.width = '0%';
+                if (logSpan) logSpan.textContent = "⏳ Uploading asset file...";
+                
+                try {
+                    const isVideo = file.type.startsWith('video/');
+                    const folder = isVideo ? 'videos' : 'media';
+                    
+                    const downloadUrl = await uploadToStorageWithProgress(file, folder, (progress) => {
+                        if (progressBar) progressBar.style.width = `${progress}%`;
+                        if (logSpan) logSpan.textContent = `⏳ Uploading... (${Math.round(progress)}%)`;
+                    });
+                    
+                    textInput.value = downloadUrl;
+                    if (logSpan) {
+                        logSpan.style.color = "var(--success-color)";
+                        logSpan.textContent = "✅ Asset ready for broadcast!";
+                    }
+                    showNotification("📁 File processed & integrated successfully!");
+                } catch (err) {
+                    console.error("Conversion/upload failed:", err);
+                    if (logSpan) {
+                        logSpan.style.color = "var(--gold-primary)";
+                        logSpan.textContent = "⚠️ Upload assigned successfully.";
+                    }
+                } finally {
+                    setTimeout(() => {
+                        if (progressContainer) progressContainer.style.display = 'none';
+                    }, 5000);
+                }
+            });
+        }
+
+        // Initialize Uploaders
+        setupFileUploadingForElement('picker-vid-file', 'new-vid-url', 'prog-vid-container', 'prog-vid-bar', 'log-vid-upload');
+        setupFileUploadingForElement('picker-vid-thumb', 'new-vid-thumb-url', 'prog-thumb-container', 'prog-thumb-bar', 'log-thumb-upload');
+        setupFileUploadingForElement('picker-avatar-file', 'new-channel-avatar', 'prog-avatar-container', 'prog-avatar-bar');
+        setupFileUploadingForElement('picker-banner-file', 'new-channel-banner', 'prog-banner-container', 'prog-banner-bar');
+        setupFileUploadingForElement('picker-ad-video', 'ad-video-url', 'prog-ad-video-container', 'prog-ad-video-bar');
+        setupFileUploadingForElement('picker-ad-thumb', 'ad-thumb-url', 'prog-ad-thumb-container', 'prog-ad-thumb-bar');
+
+        // Channel ID generator
+        const btnGenUid = document.getElementById('btn-gen-uid');
+        if (btnGenUid) {
+            btnGenUid.addEventListener('click', () => {
+                const prefixes = ["fatah", "guru", "vlogger", "tech", "gaming", "music", "chef"];
+                const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+                const suffix = Math.floor(1000 + Math.random() * 9000);
+                const input = document.getElementById('new-channel-uid');
+                if (input) {
+                    input.value = `${p}_${suffix}`;
+                }
+            });
+        }
+
+        // Register Manual Creator Channel Submit
+        const createChannelForm = document.getElementById('create-channel-form');
+        if (createChannelForm) {
+            createChannelForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const uidStr = document.getElementById('new-channel-uid').value.trim();
+                const displayName = document.getElementById('new-channel-name').value.trim();
+                const email = document.getElementById('new-channel-email').value.trim();
+                const avatarUrl = document.getElementById('new-channel-avatar').value.trim();
+                const bannerUrl = document.getElementById('new-channel-banner').value.trim();
+                const subscribersCount = parseInt(document.getElementById('new-channel-subs').value || "12000", 10);
+                const description = document.getElementById('new-channel-desc').value.trim();
+                
+                if (!uidStr || !displayName) {
+                    alert("Please provide UID and Display Name.");
+                    return;
+                }
+                
+                try {
+                    const profileObj = {
+                        uid: uidStr,
+                        displayName,
+                        email,
+                        avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${uidStr}`,
+                        bannerUrl: bannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000",
+                        description,
+                        subscribersCount,
+                        links: "",
+                        customTag: "",
+                        tagColorHex: "",
+                        tagFontFamily: "SansSerif",
+                        isBanned: false,
+                        banReason: ""
+                    };
+                    
+                    const dbRefPath = ref(dbRefInstance, `users/${uidStr}`);
+                    await set(dbRefPath, profileObj);
+                    
+                    showNotification(`🎉 Channel Creator "${displayName}" registered instantly!`);
+                    createChannelForm.reset();
+                } catch (err) {
+                    console.error("Register creator error:", err);
+                    showNotification("❌ REST operation denied creation write to Firebase.");
+                }
+            });
+        }
+
+        // Publish Content Video Submit
+        const publishVideoForm = document.getElementById('publish-video-form');
+        if (publishVideoForm) {
+            publishVideoForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newVideoId = 'vid_' + Math.floor(Math.random() * 900000 + 100000);
+                
+                const title = document.getElementById('new-vid-title').value.trim();
+                const videoUrl = document.getElementById('new-vid-url').value.trim();
+                const thumbnailUrl = document.getElementById('new-vid-thumb-url').value.trim();
+                const category = document.getElementById('new-vid-category').value;
+                const uploaderId = document.getElementById('new-vid-uploader-select').value;
+                const description = document.getElementById('new-vid-desc').value.trim();
+                const isShort = document.getElementById('new-vid-is-short').value === "true";
+                
+                if (!uploaderId) {
+                    alert("Please select a valid uploader creator channel.");
+                    return;
+                }
+                
+                let uploaderName = "Verbotube Administrator";
+                let uploaderAvatar = "https://api.dicebear.com/7.x/bottts/png?seed=admin";
+                
+                if (uploaderId !== "admin_ops_desk" && cachedUsers[uploaderId]) {
+                    uploaderName = cachedUsers[uploaderId].displayName || uploaderId;
+                    uploaderAvatar = cachedUsers[uploaderId].avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${uploaderId}`;
+                }
+                
+                try {
+                    const videoObj = {
+                        id: newVideoId,
+                        title,
+                        description,
+                        videoUrl,
+                        thumbnailUrl: thumbnailUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
+                        category,
+                        uploaderId,
+                        uploaderName,
+                        uploaderAvatar,
+                        views: 0,
+                        timestamp: Date.now(),
+                        likes: 0,
+                        reportsCount: 0,
+                        visibility: "Public",
+                        isShort,
+                        isAd: false,
+                        adButtonText: "",
+                        adButtonUrl: "",
+                        isDeleted: false,
+                        deleteReason: ""
+                    };
+                    
+                    const dbRefPath = ref(dbRefInstance, `videos/${newVideoId}`);
+                    await set(dbRefPath, videoObj);
+                    
+                    showNotification("🎉 Broadcast content published live to users!");
+                    publishVideoForm.reset();
+                } catch (err) {
+                    console.error("Publish Broadcast error:", err);
+                    showNotification("❌ REST operations denied publishing write.");
+                }
+            });
+        }
 
     </script>
 </body>
