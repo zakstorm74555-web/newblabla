@@ -1637,42 +1637,337 @@
             });
         }
 
-        // Automatic File Storage Upload and Progression
-        function uploadToStorageWithProgress(file, folderPath, progressCallback) {
+        // Helper to convert file to base64
+        function fileToBase64(file) {
             return new Promise((resolve, reject) => {
-                // If storageInstance is not initialized, fallback to convert the asset to a Base64 string automatically!
-                if (!storageInstance) {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = (e) => reject(new Error("Local translation failed"));
-                    reader.readAsDataURL(file);
-                    progressCallback(100);
-                    return;
-                }
-                
-                const cleanName = Date.now() + "_" + file.name.replace(/[^a-zA-Z0-9.]/g, "_");
-                const fileRef = sRef(storageInstance, `${folderPath}/${cleanName}`);
-                const uploadTask = uploadBytesResumable(fileRef, file);
-                
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        progressCallback(progress);
-                    }, 
-                    (error) => {
-                        console.warn("Storage upload failed, falling back to local Base64 string:", error);
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = () => reject(error);
-                        reader.readAsDataURL(file);
-                    }, 
-                    () => {
-                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                            resolve(downloadURL);
-                        });
-                    }
-                );
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64Str = reader.result.split(',')[1];
+                    resolve(base64Str);
+                };
+                reader.onerror = (e) => reject(e);
+                reader.readAsDataURL(file);
             });
+        }
+
+        // Upload and track progress using high-performance Direct Hugging Face API
+        function uploadToHuggingFaceXHR(repoType, repoId, token, path, base64Content, onProgress) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", `https://huggingface.co/api/${repoType}/${repoId}/commit/main`, true);
+                xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+                xhr.setRequestHeader("Content-Type", "application/json");
+
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        onProgress(percentComplete);
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve(xhr.status);
+                    } else {
+                        reject(new Error(`Status ${xhr.status}: ${xhr.responseText}`));
+                    }
+                };
+
+                xhr.onerror = () => {
+                    reject(new Error("Network connection error"));
+                };
+
+                const body = JSON.stringify({
+                    actions: [
+                        {
+                            action: "add",
+                            path: path,
+                            content: base64Content,
+                            encoding: "base64"
+                        }
+                    ],
+                    message: `Upload ${path} via Verbotube Admin Panel`
+                });
+
+                xhr.send(body);
+            });
+        }
+
+        // Upload via Hugging Face Space Storage microservice (avoids browser CORS & file size limits)
+        function uploadToSpaceStorage(file, onProgress) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://paradoxstudio9807-verbotube-storage.hf.space/upload-api", true);
+
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        onProgress(percentComplete);
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            if (res && res.success && res.file_url) {
+                                resolve(res.file_url);
+                            } else {
+                                reject(new Error(res.message || "Space upload returned success: false"));
+                            }
+                        } catch (e) {
+                            reject(new Error("Unable to parse Space microservice JSON response"));
+                        }
+                    } else {
+                        reject(new Error(`Space HTTP status ${xhr.status}: ${xhr.responseText}`));
+                    }
+                };
+
+                xhr.onerror = () => {
+                    reject(new Error("Space microservice network error"));
+                };
+
+                const formData = new FormData();
+                formData.append("file", file);
+                xhr.send(formData);
+            });
+        }
+
+        // Upload via Catbox.moe Backup Service (extremely resilient, CORS enabled, no sleeping space errors)
+        function uploadToCatbox(file, onProgress) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://catbox.moe/user/api.php", true);
+
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        onProgress(percentComplete);
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const resUrl = xhr.responseText.trim();
+                        if (resUrl.startsWith("https://files.catbox.moe/")) {
+                            resolve(resUrl);
+                        } else {
+                            reject(new Error("Catbox server returned invalid URL structure: " + resUrl));
+                        }
+                    } else {
+                        reject(new Error(`Catbox HTTP status ${xhr.status}: ${xhr.responseText}`));
+                    }
+                };
+
+                xhr.onerror = () => {
+                    reject(new Error("Catbox storage backup network error"));
+                };
+
+                const formData = new FormData();
+                formData.append("reqtype", "fileupload");
+                formData.append("fileToUpload", file);
+                xhr.send(formData);
+            });
+        }
+
+        // Upload via Blackblaze B2 (Primary High Performance Storage)
+        async function uploadToBackblazeB2(file, folderPath, progressCallback) {
+            const keyID = "543618b82fe1";
+            const applicationKey = "0030328054c01c2cb4258168b6ac196dc11133fad1";
+            const bucketName = "Verbotube";
+
+            // 1. Authorize B2
+            const credentials = btoa(keyID + ":" + applicationKey);
+            const authResponse = await fetch("https://api.backblazeb2.com/b2api/v2/b2_authorize_account", {
+                method: "GET",
+                headers: {
+                    "Authorization": "Basic " + credentials
+                }
+            });
+
+            if (!authResponse.ok) {
+                throw new Error("B2 authorize account failed: " + authResponse.status);
+            }
+
+            const authData = await authResponse.json();
+            const apiUrl = authData.apiUrl;
+            const authorizationToken = authData.authorizationToken;
+            const downloadUrl = authData.downloadUrl;
+
+            // 2. Find bucket ID for Verbotube
+            const listBucketsResponse = await fetch(apiUrl + "/b2api/v2/b2_list_buckets", {
+                method: "POST",
+                headers: {
+                    "Authorization": authorizationToken,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    accountId: authData.accountId,
+                    bucketName: bucketName
+                })
+            });
+
+            if (!listBucketsResponse.ok) {
+                throw new Error("B2 list buckets failed: " + listBucketsResponse.status);
+            }
+
+            const listBucketsData = await listBucketsResponse.json();
+            if (!listBucketsData.buckets || listBucketsData.buckets.length === 0) {
+                throw new Error("B2 bucket Verbotube not found in account.");
+            }
+            const bucketId = listBucketsData.buckets[0].bucketId;
+
+            // 3. Get Upload URL
+            const getUploadUrlResponse = await fetch(apiUrl + "/b2api/v2/b2_get_upload_url", {
+                method: "POST",
+                headers: {
+                    "Authorization": authorizationToken,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    bucketId: bucketId
+                })
+            });
+
+            if (!getUploadUrlResponse.ok) {
+                throw new Error("B2 get upload URL failed: " + getUploadUrlResponse.status);
+            }
+
+            const uploadUrlData = await getUploadUrlResponse.json();
+            const uploadUrl = uploadUrlData.uploadUrl;
+            const uploadAuthToken = uploadUrlData.authorizationToken;
+
+            // 4. Perform XHR Upload to B2
+            const cleanName = Date.now() + "_" + file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+            const filePath = `${folderPath}/${cleanName}`;
+
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", uploadUrl, true);
+
+                xhr.setRequestHeader("Authorization", uploadAuthToken);
+                xhr.setRequestHeader("X-Bz-File-Name", encodeURIComponent(filePath).replace(/%2F/g, "/"));
+                xhr.setRequestHeader("Content-Type", file.type || "b2/x-auto");
+                xhr.setRequestHeader("X-Bz-Content-Sha1", "do_not_verify");
+
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        progressCallback(percentComplete);
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const finalUrl = `${downloadUrl}/file/${bucketName}/${filePath}`;
+                        console.log("B2 Upload completed! URL: ", finalUrl);
+                        resolve(finalUrl);
+                    } else {
+                        reject(new Error("B2 upload file failed with status " + xhr.status + ": " + xhr.responseText));
+                    }
+                };
+
+                xhr.onerror = () => {
+                    reject(new Error("B2 upload file network execution error"));
+                };
+
+                xhr.send(file);
+            });
+        }
+
+        // Automatic File Storage Upload and Progression (Multi-strategy with B2, Space, Catbox, HF Repo, and Firebase)
+        async function uploadToStorageWithProgress(file, folderPath, progressCallback) {
+            const cleanName = Date.now() + "_" + file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+            const filePath = `${folderPath}/${cleanName}`;
+            
+            // Tier 1: Prioritize direct Blackblaze B2 Upload (Highly Reliable, Public Storage, no size limits)
+            try {
+                console.log("Attempting upload to Blackblaze B2 Storage...");
+                const b2Url = await uploadToBackblazeB2(file, folderPath, progressCallback);
+                console.log("Blackblaze B2 upload successful:", b2Url);
+                return b2Url;
+            } catch (b2Err) {
+                console.warn("Blackblaze B2 upload failed or blocked by CORS, attempting Hugging Face Space fallback...", b2Err);
+                
+                // Tier 2: Fallback to Hugging Face Space Storage Microservice
+                try {
+                    console.log("Attempting upload to Hugging Face Space Storage Microservice...");
+                    const spaceUrl = await uploadToSpaceStorage(file, progressCallback);
+                    console.log("Hugging Face Space Storage upload successful:", spaceUrl);
+                    return spaceUrl;
+                } catch (spaceErr) {
+                    console.warn("Hugging Face Space Storage upload failed/asleep, attempting Catbox backup...", spaceErr);
+                    
+                    // Tier 3: Catbox backup (highly reliable, no wakeup delays, supports CORS seamlessly)
+                    try {
+                        console.log("Attempting upload to Catbox storage backup...");
+                        const catboxUrl = await uploadToCatbox(file, progressCallback);
+                        console.log("Catbox upload successful:", catboxUrl);
+                        return catboxUrl;
+                    } catch (catboxErr) {
+                        console.warn("Catbox upload failed, attempting direct Hugging Face repository API fallback...", catboxErr);
+                        
+                        // Tier 4: Fallback to Direct Hugging Face Repository API commit
+                        try {
+                            const base64Content = await fileToBase64(file);
+                            const repoId = "paradoxstudio9807/Verbotube-storage";
+                            const token = "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";
+                            const repoTypes = ["datasets", "models", "spaces"];
+                            
+                            let lastError = null;
+                            for (const repoType of repoTypes) {
+                                try {
+                                    console.log(`Attempting Hugging Face direct upload to ${repoType} repository...`);
+                                    await uploadToHuggingFaceXHR(repoType, repoId, token, filePath, base64Content, progressCallback);
+                                    const resolveUrl = `https://huggingface.co/${repoType}/${repoId}/resolve/main/${filePath}`;
+                                    console.log(`Hugging Face direct upload successful on ${repoType}:`, resolveUrl);
+                                    return resolveUrl;
+                                } catch (err) {
+                                    console.warn(`Hugging Face direct upload to ${repoType} failed:`, err);
+                                    lastError = err;
+                                }
+                            }
+                            if (lastError) throw lastError;
+                        } catch (hfError) {
+                            console.warn("Direct Hugging Face repository upload failed, resorting to Firebase fallback:", hfError);
+                            
+                            // Tier 5: Fallback attempt to Firebase Storage
+                        if (storageInstance) {
+                            return new Promise((resolve, reject) => {
+                                const fileRef = sRef(storageInstance, `${folderPath}/${cleanName}`);
+                                const uploadTask = uploadBytesResumable(fileRef, file);
+                                
+                                uploadTask.on('state_changed', 
+                                    (snapshot) => {
+                                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                        progressCallback(progress);
+                                    }, 
+                                    (fbError) => {
+                                        console.error("Firebase Storage failed, returning Base64 URL:", fbError);
+                                        fileToBase64(file).then(resolve).catch(() => reject(fbError));
+                                    }, 
+                                    () => {
+                                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                                            resolve(downloadURL);
+                                        });
+                                    }
+                                );
+                            });
+                        } else {
+                            // Tier 5: Local fallback translation to inline Base64 url
+                            console.warn("Firebase Storage instance not initialized. Using local Base64 data URI...");
+                            const dataUrl = await new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onload = () => resolve(reader.result);
+                                reader.onerror = (e) => reject(new Error("Local fallback translation failed"));
+                                reader.readAsDataURL(file);
+                            });
+                            progressCallback(100);
+                            return dataUrl;
+                        }
+                    }
+                }
+            }
         }
 
         // Generic File Upload Wiring Helper
